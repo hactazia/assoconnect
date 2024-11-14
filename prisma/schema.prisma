@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(cuid())
+  name        String
+  displayName String
+  email       String       @unique
+  password    String // Hashed password
+  role        UserRole     @default(MEMBER)
+  invitations Invitation[]
+  meetings    Meeting[]
+  events      Event[]
+  polls       Poll[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+  EXTERNAL
+}
+
+model Meeting {
+  id             String    @id @default(cuid())
+  title          String
+  description    String
+  startDate      DateTime
+  endDate        DateTime?
+  location       String
+  ownerId        String
+  owner          User      @relation(fields: [ownerId], references: [id])
+  participantIds String[] // List of user ids
+  documents      Report[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  name      String
+  file      Bytes
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id             String   @id @default(cuid())
+  title          String
+  description    String
+  startDate      DateTime
+  endDate        DateTime
+  location       String
+  ownerId        String
+  owner          User     @relation(fields: [ownerId], references: [id])
+  participantIds String[] // List of user ids
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Poll {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  options     PollOption[]
+  deadline    DateTime
+  ownerId     String
+  owner       User         @relation(fields: [ownerId], references: [id])
+  votes       Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model PollOption {
+  id          String   @id @default(cuid())
+  pollId      String
+  poll        Poll     @relation(fields: [pollId], references: [id])
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Invitation {
+  id        String           @id @default(cuid())
+  email     String
+  role      UserRole
+  token     String
+  ownerId   String
+  owner     User             @relation(fields: [ownerId], references: [id])
+  status    InvitationStatus
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
